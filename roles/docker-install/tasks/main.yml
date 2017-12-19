@@ -1,0 +1,51 @@
+---
+- name: Check if machine has been already configured
+  shell: cat /etc/docker/install.status
+  register: installCheck
+  ignore_errors: yes
+
+- name: Make sure Docker is not installed
+  yum:
+    name: "{{ item }}"
+    state: absent
+  with_items:
+    - docker
+    - docker-common
+    - docker-selinux
+    - docker-engine
+  when: installCheck.stdout != "installed"
+
+- name: Install Docker-CE pre-requisites
+  yum:
+    name: "{{ item }}"     
+    state: present
+  with_items:
+    - yum-utils
+    - device-mapper-persistent-data
+    - lvm2
+  when: installCheck.stdout != "installed"
+      
+- name: Configure yum and install Docker-CE
+  script: yum-configuration.sh {{dockerVersion}}{{dockerVersionExtra}}
+  when: installCheck.stdout != "installed"    
+  
+- name: Install Docker Compose
+  get_url:
+    url: 'https://github.com/docker/compose/releases/download/{{ docker_compose_version }}/docker-compose-Linux-x86_64'
+    dest: '/usr/bin/docker-compose'
+    force: True
+    owner: 'root'
+    group: 'root'
+    mode: '0755'
+  when: installCheck.stdout != "installed"
+
+- name: Start/restart docker service
+  systemd:
+    name: docker
+    state: started
+  when: installCheck.stdout != "installed"
+  ignore_errors: yes
+
+- name: Create error-handler file
+  shell: echo "installed" >> /etc/docker/install.status
+  when: installCheck.stdout != "installed"

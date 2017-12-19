@@ -1,0 +1,9 @@
+---
+- hosts: localhost
+  become: true
+  vars_files:
+    - vars/init-vars.yml
+  roles:
+    - ssh-setup
+    - essentials
+    - docker-install

@@ -1,0 +1,33 @@
+---
+- name: Set up SSH users
+  user:
+    name: "{{ item.name }}"
+    shell: /bin/bash
+    groups: wheel,docker
+    append: yes
+  with_items:
+    - "{{ users }}"
+
+- name: Check if 'UseDNS' is set to 'no'
+  shell: cat /etc/ssh/sshd_config | grep "UseDNS no"
+  register: useDNS
+  ignore_errors: yes
+  
+- name: Set up 'UseDNS' to 'no'
+  shell: echo "UseDNS no" >> /etc/ssh/sshd_config
+  when: useDNS.stdout != "UseDNS no"
+
+- name: Restart SSHD service
+  service:
+    name: sshd
+    state: restarted
+
+- name: Back up sudoers file in use
+  copy:
+    src: /etc/sudoers
+    dest: /etc/sudoers.bk
+
+- name: Copy sudoers file to /etc/sudoers
+  copy:
+    src: sudoers
+    dest: /etc/sudoers

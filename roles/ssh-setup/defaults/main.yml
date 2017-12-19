@@ -1,0 +1,4 @@
+---
+users: 
+  - { name: 'devops' }
+  - { name: 'devops-infra-jenkins' }
